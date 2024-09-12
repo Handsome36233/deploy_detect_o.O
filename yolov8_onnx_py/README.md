@@ -1,12 +1,6 @@
 # readme
 
-pt文件转onnx
-
-```shell
-python export2onnx.py
-```
-
-demo
+运行
 
 ```shell
 python main.py

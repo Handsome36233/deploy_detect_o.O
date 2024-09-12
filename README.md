@@ -8,7 +8,7 @@ TODO
   
   - [x] onnxruntime python
   
-  - [ ] onnxruntime cpp
+  - [x] onnxruntime cpp
   
   - [ ] onnxruntime rust
 
@@ -28,7 +28,9 @@ TODO
   
   - [ ] onnxruntime rust
 
-[yolov8 onnxruntime python](./yolov8_onnx_py)
+./yolov8_onnx_py
+
+[yolov8 onnxruntime cpp](./yolov8_onnx_cpp)
 
 参考项目
 
