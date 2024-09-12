@@ -28,7 +28,7 @@ TODO
   
   - [ ] onnxruntime rust
 
-./yolov8_onnx_py
+[yolov8 onnxruntime python](./yolov8_onnx_py)
 
 [yolov8 onnxruntime cpp](./yolov8_onnx_cpp)
 
