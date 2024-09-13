@@ -4,13 +4,13 @@
 
 TODO
 
-- [ ] yolov8
+- [x] yolov8
   
   - [x] onnxruntime python
   
   - [x] onnxruntime cpp
   
-  - [ ] onnxruntime rust
+  - [x] onnxruntime rust
 
 - [ ] yolov5
   
@@ -32,6 +32,10 @@ TODO
 
 [yolov8 onnxruntime cpp](./yolov8_onnx_cpp)
 
+[yolov8 onnxruntime rust](./yolov8_onnx_rust)
+
 参考项目
 
 https://github.com/ultralytics/ultralytics/tree/main/examples
+
+https://github.com/pykeio/ort/tree/main/examples/yolov8
