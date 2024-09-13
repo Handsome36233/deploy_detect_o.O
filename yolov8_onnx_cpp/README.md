@@ -11,5 +11,5 @@ cmake .. && make
 
 ```shell
 
-./demo
+./demo --model_path --image_path
 ```
