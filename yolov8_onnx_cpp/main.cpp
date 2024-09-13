@@ -11,7 +11,7 @@ typedef struct _DL_RESULT
     int classId;
     float confidence;
     cv::Rect box;
-    std::vector<cv::Point2f> keyPoints;
+    vector<cv::Point2f> keyPoints;
 } DL_RESULT;
 
 void PrintSessionInfo(const Ort::Session& session, Ort::AllocatorWithDefaultOptions& allocator) {
@@ -19,29 +19,29 @@ void PrintSessionInfo(const Ort::Session& session, Ort::AllocatorWithDefaultOpti
     auto input_count = session.GetInputCount();
     auto output_count = session.GetOutputCount();
 
-    std::cout << "Input Count: " << input_count << std::endl;
-    std::cout << "Output Count: " << output_count << std::endl;
+    cout << "Input Count: " << input_count << endl;
+    cout << "Output Count: " << output_count << endl;
 
     // 打印输入名称和形状
     for (int i = 0; i < input_count; ++i) {
-        std::string input_name = session.GetInputNameAllocated(i, allocator).get();
-        std::vector<int64_t> input_shape = session.GetInputTypeInfo(i).GetTensorTypeAndShapeInfo().GetShape();
+        string input_name = session.GetInputNameAllocated(i, allocator).get();
+        vector<int64_t> input_shape = session.GetInputTypeInfo(i).GetTensorTypeAndShapeInfo().GetShape();
 
-        std::cout << "Input " << i << " Name: " << input_name << std::endl;
-        std::cout << "Input " << i << " Shape: ";
-        for (const auto& dim : input_shape) std::cout << dim << ' ';
-        std::cout << std::endl;
+        cout << "Input " << i << " Name: " << input_name << endl;
+        cout << "Input " << i << " Shape: ";
+        for (const auto& dim : input_shape) cout << dim << ' ';
+        cout << endl;
     }
 
     // 打印输出名称和形状
     for (int i = 0; i < output_count; ++i) {
-        std::string output_name = session.GetOutputNameAllocated(i, allocator).get();
-        std::vector<int64_t> output_shape = session.GetOutputTypeInfo(i).GetTensorTypeAndShapeInfo().GetShape();
+        string output_name = session.GetOutputNameAllocated(i, allocator).get();
+        vector<int64_t> output_shape = session.GetOutputTypeInfo(i).GetTensorTypeAndShapeInfo().GetShape();
 
-        std::cout << "Output " << i << " Name: " << output_name << std::endl;
-        std::cout << "Output " << i << " Shape: ";
-        for (const auto& dim : output_shape) std::cout << dim << ' ';
-        std::cout << std::endl;
+        cout << "Output " << i << " Name: " << output_name << endl;
+        cout << "Output " << i << " Shape: ";
+        for (const auto& dim : output_shape) cout << dim << ' ';
+        cout << endl;
     }
 }
 
@@ -63,9 +63,13 @@ void BlobFromImage(cv::Mat& iImg, float* iBlob) {
     }
 }
 
-int main() {
-    const char* model_path = "/home/jinfan/Desktop/ai_tt1/deploy_detect_o.O/checkpoints/best.onnx"; // 模型路径
-    const char* image_path = "/home/jinfan/Desktop/ai_tt1/deploy_detect_o.O/data/1.jpg";   // 输入图片路径
+int main(int argc, char* argv[]) {
+    if (argc != 3) {
+        cerr << "Usage: " << argv[0] << " <onnx_model_path> <image_path>\n";
+        return -1;
+    }
+    const char* model_path = (const char *)argv[1];
+    const char* image_path = (const char *)argv[2];
     const char* save_path = "output.jpg";   // 保存结果
     
     // 配置参数
@@ -86,8 +90,8 @@ int main() {
     // 打印输入输出信息
     PrintSessionInfo(session, allocator);
     Ort::RunOptions options;
-    std::vector<const char*> inputNodeNames;
-    std::vector<const char*> outputNodeNames;
+    vector<const char*> inputNodeNames;
+    vector<const char*> outputNodeNames;
 
     size_t inputNodesNum = session.GetInputCount();
     for (size_t i = 0; i < inputNodesNum; i++)
@@ -117,7 +121,7 @@ int main() {
     // 转tensor
     float* blob = new float[image.total() * 3];
     BlobFromImage(image, blob);
-    std::vector<int64_t> inputNodeDims = { 1, 3, img_height, img_width };
+    vector<int64_t> inputNodeDims = { 1, 3, img_height, img_width };
     Ort::Value inputTensor = Ort::Value::CreateTensor<float>(
         Ort::MemoryInfo::CreateCpu(OrtDeviceAllocator, OrtMemTypeCPU), blob, 3 * img_width * img_height,
         inputNodeDims.data(), inputNodeDims.size());
@@ -126,23 +130,23 @@ int main() {
         outputNodeNames.size());
     Ort::TypeInfo typeInfo = outputTensor.front().GetTypeInfo();
     auto tensor_info = typeInfo.GetTensorTypeAndShapeInfo();
-    std::vector<int64_t> outputNodeDims = tensor_info.GetShape();
+    vector<int64_t> outputNodeDims = tensor_info.GetShape();
     // 取出输出数据
     auto output = outputTensor.front().GetTensorMutableData<float>();
 
     int signalResultNum = outputNodeDims[1];
     int strideNum = outputNodeDims[2];
-    std::cout << "signalResultNum: " << signalResultNum << std::endl;
-    std::cout << "strideNum: " << strideNum << std::endl;
-    std::vector<int> class_ids;
-    std::vector<float> confidences;
-    std::vector<cv::Rect> boxes;
+    cout << "signalResultNum: " << signalResultNum << endl;
+    cout << "strideNum: " << strideNum << endl;
+    vector<int> class_ids;
+    vector<float> confidences;
+    vector<cv::Rect> boxes;
     for (int i = 0; i < strideNum; ++i)
     {
         float tmp_class_score[signalResultNum-4];
         for (int j = 0; j < signalResultNum-4; ++j) tmp_class_score[j] = output[strideNum*(j+4)+i];
-        auto classesScores = std::max_element(tmp_class_score, tmp_class_score + signalResultNum-4);
-        auto classId = std::distance(tmp_class_score, classesScores);
+        auto classesScores = max_element(tmp_class_score, tmp_class_score + signalResultNum-4);
+        auto classId = distance(tmp_class_score, classesScores);
         
         if (*classesScores > rectConfidenceThreshold)
         {
@@ -162,9 +166,9 @@ int main() {
             boxes.push_back(cv::Rect(left, top, width, height));
         }
     }
-    std::vector<int> nmsResult;
+    vector<int> nmsResult;
     cv::dnn::NMSBoxes(boxes, confidences, rectConfidenceThreshold, iouThreshold, nmsResult);
-    std::vector<DL_RESULT> oResult;
+    vector<DL_RESULT> oResult;
     for (int i = 0; i < nmsResult.size(); ++i)
     {
         int idx = nmsResult[i];
@@ -174,11 +178,11 @@ int main() {
         result.box = boxes[idx];
         oResult.push_back(result);
     }
-    std::cout << "oResult: " << oResult.size() << std::endl;
+    cout << "oResult: " << oResult.size() << endl;
     for (auto& re : oResult) {
         cv::rectangle(show_img, re.box, (0, 255, 0), 3);
     }
     cv::imwrite(save_path, show_img);
-    std::cout << "save result to " << save_path << std::endl;
+    cout << "save result to " << save_path << endl;
     return 0;
 }
