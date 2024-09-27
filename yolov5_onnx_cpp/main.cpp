@@ -45,6 +45,53 @@ void PrintSessionInfo(const Ort::Session& session, Ort::AllocatorWithDefaultOpti
     }
 }
 
+std::tuple<cv::Mat, std::pair<float, float>, std::pair<float, float>> letterbox(const cv::Mat& im, const cv::Size& new_shape = cv::Size(640, 640), const cv::Scalar& color = cv::Scalar(0, 0, 0)) {
+    // 获取当前图像的宽高
+    int img_h = im.rows;
+    int img_w = im.cols;
+
+    // 计算缩放比例
+    float r_w = static_cast<float>(new_shape.width) / img_w;
+    float r_h = static_cast<float>(new_shape.height) / img_h;
+    float r = std::min(r_w, r_h);  // 选择最小比例
+
+    // std::pair<float, float> ratio = {r_w, r_h};
+
+    // 计算新的宽高
+    int new_w = static_cast<int>(std::round(img_w * r));
+    int new_h = static_cast<int>(std::round(img_h * r));
+    std::pair<int, int> new_unpad = {new_w, new_h};
+
+    std::pair<float, float> ratio = {new_w / float(new_shape.width), new_h / float(new_shape.height)};
+    // 计算左右和上下的填充
+    int dw = new_shape.width - new_w;
+    int dh = new_shape.height - new_h;
+
+    float dw_half = dw / 2.0f;  // 将填充分配到两侧
+    float dh_half = dh / 2.0f;
+
+    // 如果新尺寸和原图尺寸不一致，进行缩放
+    cv::Mat resized;
+    if (cv::Size(new_w, new_h) != cv::Size(img_w, img_h)) {
+        cv::resize(im, resized, cv::Size(new_w, new_h), 0, 0, cv::INTER_LINEAR);
+    } else {
+        resized = im;
+    }
+
+    // 计算填充的上下左右值
+    int top = static_cast<int>(std::round(dh_half - 0.1));
+    int bottom = static_cast<int>(std::round(dh_half + 0.1));
+    int left = static_cast<int>(std::round(dw_half - 0.1));
+    int right = static_cast<int>(std::round(dw_half + 0.1));
+
+    // 进行填充
+    cv::Mat padded;
+    cv::copyMakeBorder(resized, padded, top, bottom, left, right, cv::BORDER_CONSTANT, color);
+
+    // 返回填充后的图像、缩放比例和填充尺寸
+    return {padded, ratio, {dw_half, dh_half}};
+}
+
 void BlobFromImage(cv::Mat& iImg, float* iBlob) {
     int channels = iImg.channels();
     int imgHeight = iImg.rows;
@@ -118,10 +165,14 @@ int main(int argc, char* argv[]) {
     cv::cvtColor(image, image, cv::COLOR_BGR2RGB);
     float resizeScalesW = image.cols / float(img_width);
     float resizeScalesH = image.rows / float(img_height);
-    cv::resize(image, image, cv::Size(img_width, img_height));
+    // cv::resize(image, image, cv::Size(img_width, img_height));
+    cv::Size new_shape = cv::Size(img_width, img_height);
+    auto [padded_image, ratio, padding] = letterbox(image, new_shape, cv::Scalar(114, 114, 114));
+    std::cout << "ratio: " << ratio.first << " " << ratio.second << " padding: " << padding.first << " " << padding.second << std::endl;
     // 转tensor
-    float* blob = new float[image.total() * 3];
-    BlobFromImage(image, blob);
+    cv::imwrite("padded_image.jpg", padded_image);
+    float* blob = new float[padded_image.total() * 3];
+    BlobFromImage(padded_image, blob);
     vector<int64_t> inputNodeDims = { 1, 3, img_height, img_width };
     Ort::Value inputTensor = Ort::Value::CreateTensor<float>(
         Ort::MemoryInfo::CreateCpu(OrtDeviceAllocator, OrtMemTypeCPU), blob, 3 * img_width * img_height,
@@ -160,13 +211,21 @@ int main(int argc, char* argv[]) {
             float w = output[signalResultNum*i+2];
             float h = output[signalResultNum*i+3];
 
-            int left = int((x - 0.5 * w) * resizeScalesW);
-            int top = int((y - 0.5 * h) * resizeScalesH);
+            int left = int((x - 0.5 * w));
+            int top = int((y - 0.5 * h));
 
-            int width = int(w * resizeScalesW);
-            int height = int(h * resizeScalesH);
+            // 还原到原图坐标
+            left = int((left - padding.first) / ratio.first);  // x1
+            top = int((top - padding.second) / ratio.second);  // y1
+            w = int(w / ratio.first);  // w
+            h = int(h / ratio.second);  // h
 
-            boxes.push_back(cv::Rect(left, top, width, height));
+            left *= resizeScalesW;
+            top *= resizeScalesH;
+            w *= resizeScalesW;
+            h *= resizeScalesH;
+
+            boxes.push_back(cv::Rect(left, top, w, h));
         }
     }
     vector<int> nmsResult;
@@ -181,7 +240,6 @@ int main(int argc, char* argv[]) {
         result.box = boxes[idx];
         oResult.push_back(result);
     }
-    cout << "oResult: " << oResult.size() << endl;
     for (auto& re : oResult) {
         cv::rectangle(show_img, re.box, (0, 255, 0), 3);
         std::cout << "classId: " << re.classId << " confidence: " << re.confidence << " box: " << re.box << std::endl;
