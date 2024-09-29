@@ -23,21 +23,6 @@ double sigmoid(double x) {
     return 1.0 / (1.0 + std::exp(-x));
 }
 
-void transpose(float* input, float*output, int* shape){
-    for (int i = 0; i < shape[0]; i++) {
-        for (int j = 0; j < shape[1]; j++) {
-            for (int k = 0; k < shape[2]; k++) {
-                for (int l = 0; l < shape[3]; l++) {
-                    int in_k = i*shape[1]*shape[2]*shape[3] + j*shape[2]*shape[3] + k*shape[3] + l;
-                    int out_k = j + i*shape[1] + l*shape[1]*shape[3] + k*shape[1]*shape[2]*shape[3];
-                    output[in_k] = input[out_k];
-                }
-            }
-        }
-    }
-}
-
-
 void transpose(float* input, float* output, const int* m_n, int* pose) {
     // 计算新数组的大小
     int totalSize = 1;
