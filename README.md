@@ -12,13 +12,13 @@ TODO
   
   - [x] onnxruntime rust
 
-- [ ] yolov5
+- [x] yolov5
   
   - [x] onnxruntime python
   
   - [x] onnxruntime cpp
   
-  - [ ] onnxruntime rust
+  - [x] onnxruntime rust
 
 - [ ] dert
   
@@ -37,6 +37,8 @@ TODO
 [yolov5 onnxruntime python](./yolov5_onnx_py)
 
 [yolov5_onnxruntime_cpp](./yolov5_onnx_cpp)
+
+[yolov5_onnxruntime_rust](./yolov5_onnx_rust)
 
 参考项目
 
